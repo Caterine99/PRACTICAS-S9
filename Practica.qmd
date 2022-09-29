@@ -1,0 +1,228 @@
+---
+title: "DISEÑO ESTADÍSTICO DE EXPERIMENTOS"
+format: pdf
+editor: visual
+---
+
+# Diseño Completamente Aleatorio con efectos fijos (Diseño unifactorial de efectos fijos)
+
+El primer diseño que presentamos es el diseño completamente aleatorio de efectos fijos y la técnica estadística es el análisis de la varianza de una vía o un factor. La descripción del diseño así como la terminología subyacente la vamos a introducir mediante el siguiente supuesto práctico.
+
+## Supuesto práctico 1
+La contaminación es uno de los problemas ambientales más importantes que afectan a nuestro mundo. En las grandes ciudades, la contaminación del aire se debe a los escapes de gases de los motores de explosión, a los aparatos domésticos de la calefacción, a las industrias,… El aire contaminado nos afecta en nuestro vivir diario, manifestándose de diferentes formas en nuestro organismo. Con objeto de comprobar la contaminación del aire en una determinada ciudad, se ha realizado un estudio en el que se han analizado las concentraciones de monóxido de carbono (CO) durante cinco días de la semana (lunes, martes, miércoles, jueves y viernes).
+
+
+|    <br>Días de la semana    |    <br>Concentraciones de monóxido de carbono    |               |               |               |               |               |               |               |
+|-----------------------------|--------------------------------------------------|---------------|---------------|---------------|---------------|---------------|---------------|---------------|
+|    <br>Lunes                |    <br>420                                       |    <br>390    |    <br>480    |    <br>430    |    <br>440    |    <br>324    |    <br>450    |    <br>460    |
+|    <br>Martes               |    <br>450                                       |    <br>390    |    <br>430    |    <br>521    |    <br>320    |    <br>360    |    <br>342    |    <br>423    |
+|    <br>Miércoles            |    <br>355                                       |    <br>462    |    <br>286    |    <br>238    |    <br>344    |    <br>423    |    <br>123    |    <br>196    |
+|    <br>Jueves               |    <br>321                                       |    <br>254    |    <br>412    |    <br>368    |    <br>340    |    <br>258    |    <br>433    |    <br>489    |
+|    <br>Viernes              |    <br>238                                       |    <br>255    |    <br>366    |    <br>389    |    <br>198    |    <br>256    |    <br>248    |    <br>324    |
+
+En el ejemplo disponemos de una colección de 40 unidades experimentales y queremos estudiar el efecto de las concentraciones de monóxido de carbono en 5 días distintos. Es decir, estamos interesados en contrastar el efecto de un solo factor, que se presenta con cinco niveles, sobre la variable respuesta.
+```{r}
+
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+contaminacion<-read.table("supuesto1.txt",header = TRUE)
+contaminacion
+```
+
+**1.    Tranformar la variable referente a los niveles del factor fijo como factor**
+```{r}
+contaminacion$dia<-factor(contaminacion$Dia)
+contaminacion$dia
+```
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Concentracion~Dia, data = contaminacion)
+```
+
+donde:
+
+-   Concentracion = nombre de la columna de las observaciones.
+-   Dia = nombre de la columna en la que están representados los tratamientos.
+-   data= data.frame en el que están guardados los datos
+```{r}
+mod
+```
+Se puede mostrar un resumen de los resultados con la función “summary” (verdadera tabla ANOVA)
+```{r}
+summary(mod)#tabla anova
+```
+Si el valor de F es mayor que uno quiere decir que hay un efecto positivo del factor día. Se observa que el P-valor (Sig.) tiene un valor de 0.00102, que es menor que el nivel de significación 0.05. Por lo tanto, hemos comprobado estadísticamente que estos cinco grupos son distintos. Es decir, existen diferencias significativas en las concentraciones medias de monóxido de carbono entre los cinco días de la semana. Por lo tanto no se puede rechazar la hipótesis alternativa que dice que al menos dos grupos son diferentes, pero ¿Cuáles son esos grupos? ¿Los cinco grupos son distintos o sólo alguno de ellos? Pregunta que resolveremos más adelante mediante los contrastes de comparaciones múltiples.
+
+**2.    En la expresión del comando “aov” indicar el factor**
+```{r}
+mod1<-aov(Concentracion~factor(Dia),data = contaminacion)
+mod1
+```
+También se puede utilizar el comando “anova” y no es necesario el comando “summary”
+```{r}
+mod2<-anova(lm(Concentracion~factor(Dia),data = contaminacion))
+mod2
+```
+
+**Los datos pueden venir dados en diferentes formatos:**
+
+
+**1.    Caso en el que los datos se muestran de forma que se analiza la contaminación con cada uno de los dias de la semana (de lunes a viernes). Como se muestra a continuación**
+```{r}
+contaminacion<-read.table("supuesto1-1.txt",header = TRUE)
+contaminacion
+```
+En primer lugar apilaremos las columnas, para ello utilizamos el comando “stack” de la siguiente forma
+```{r}
+trats<-stack(contaminacion)
+trats
+```
+Nos muestra dos columnas:
+
+-   La primera columna: values nos muestra los valores de la variable respuesta. En este caso la contaminación
+-   La segunda columna: ind nos muestra los diferentes tratamientos
+Podemos realizar el Análisis de la varianza utilzando el comando anova
+```{r}
+anova(lm(values~ind,data = trats))
+```
+
+**2.    . Los datos vienen dados de la siguiente forma:**
+
+Lunes: 420, 390, 480, 430, 440, 324, 450, 460
+
+Martes: 450, 390, 430, 521, 320, 360, 342, 423
+
+Miércoles: 355, 462, 286, 238, 344, 423, 123, 196
+
+Jueves: 321, 254, 412, 368, 340, 258, 433, 489
+
+Viernes: 238, 255, 366, 389, 198, 256, 248, 324
+
+Se crean cinco vectores, cada uno de ellos representando la contaminación con un tratamiento.
+```{r}
+Lu=c(420,390,480,430,440,324,450,460)
+Ma=c(450,390,430,521,320,360,342,423)
+Mi=c(355,462,286,238,344,423,123,196)
+Ju=c(321,254,412,368,340,258,433,489)
+Vi=c(238,255,366,389,198,256,248,324)
+```
+
+Acontinuación creamos un data.frame para poder resolver el ANOVA
+```{r}
+datos=data.frame(Lu,Ma,Mi,Ju,Vi)
+datos
+```
+De esta forma hemos creado una nueva base de datos que hemos llamado  “datos“. Para resolver el ANOVA tenemos  primero que apilar las columnas con el comando “stack”
+```{r}
+datos1<-stack(datos)
+datos1
+```
+
+Resolvemos el ANOVA como en el caso anterior
+```{r}
+anova(lm(values~ind,data = datos1))
+```
+
+**3.    Los datos se muestren en un solo vector que tiene todos los datos de la contaminación tanto si se ha medido el lunes, el martes, el miércoles, el jueves o el viernes**
+```{r}
+contaminacion=c(Lu,Ma,Mi,Ju,Vi)
+contaminacion
+```
+Este vector esta formado por los 40 datos que podemos comprobarlo con el comando length
+```{r}
+length(contaminacion)
+```
+
+
+Para realizar el ANOVA, ya tenemos los datos de la variable respuesta y a continuación tenemos que crear el factor tratamiento, para ello vamos a utilizar la función generador de niveles, gl,  y le decimos que nos genere 5 niveles que son los cinco tratamientos, cada uno repetido 8 veves con un total de 40 datos y para identificar que nivel es cada uno, creamos las etiquetas L, M, Mi, J y V
+```{r}
+trat=gl(5,8,40,labels = c("L","M","Mi","J","V"))
+trat
+anova(lm(contaminacion~trat))
+```
+El modelo que hemos propuesto hay que validarlo, para ello hay que comprobar si se verifican las hipótesis básicas del modelo, es decir, si las perturbaciones son variables aleatorias independientes con distribución normal de media 0 y varianza constante (homocedasticidad).
+
+# Estudio de la Idoneidad del modelo
+Como hemos dicho anteriormente, validar el modelo propuesto consiste en estudiar si las hipótesis básicas del modelo están o no en contradicción con los datos observados. Es decir si se satisfacen los supuestos del modelo: Normalidad, Independencia, Homocedasticidad. Para ello utilizamos procedimientos gráficos y analíticos.
+
+## Hipótesis de Normalidad
+en primer lugar, analizamos la normalidad de las concentraciones y continumos con el análisis de la normalidad de los residuos
+```{r}
+shapiro.test(mod$residuals)
+```
+Observamos con el test de Shapiro-Wilk que es adecuado cuando las muestras son pequeñas $(n < 50)$  y es una alternativa más potente que el test de Kolmogorov-Smirnov. El p-valor es mayor que el nivel de significación del 5%, concluyendo que las muestras de las concentraciones se distribuyen de forma normal en cada día de la semana.
+
+Podemos verlo también gráficamente con la orden “qqnorm”
+```{r}
+qqnorm(mod$residuals)
+```
+
+Podemos apreciar en este gráfico que los puntos aparecen próximos a la línea diagonal. Esta gráfica no muestra una desviación marcada de la normalidad.
+
+## Hipótesis de homocedasticidad
+Para comprobar la hipótesis de igualdad entre las varianzas del factor utilizamos el Test de Barlett.
+```{r}
+contaminacion<-read.table("supuesto1.txt",header = TRUE)
+bartlett.test(contaminacion$Concentracion, contaminacion$Dia)
+
+
+```
+
+El p-valor es del 0.2402 que al ser mayor del nivel significación usual del 5% no podemos rechazar la hipótesis de igualdad de varianzas, es decir, se acepta la igualdad de varianzas en el factor.
+
+## Hipótesis de independencia
+Para comprobar que se satisface el supuesto de independencia entre los residuos analizamos el gráfico de los residuos frente a los valores pronosticados o predichos por el modelo. El empleo de este gráfico es útil puesto que la presencia de alguna tendencia en el mismo puede ser indicio de una violación de dicha hipótesis. En R obtenemos varios gráficos a la vez que están incluidos en la estimación del modelo.
+
+Para verlos de forma correcta hacemos uso de las siguientes órdenes:
+```{r}
+contaminacion<-read.table("supuesto1.txt",header = TRUE)
+mod<-aov(Concentracion~Dia, data = contaminacion)
+layout(matrix(c(1,2,3,4),2,2))#para que salgan en la misma pantalla
+plot(mod)
+```
+
+**Comparaciones múltiples**
+
+Para saber entre que parejas de días las diferencias entre concentraciones medias de CO  son significativas aplicamos la prueba Post-hoc de Tukey
+```{r}
+contaminacion$dia<-factor(contaminacion$Dia)
+mod<-aov(Concentracion~factor(Dia),data = contaminacion)
+mod.tukey<-TukeyHSD(mod,ordered = TRUE)
+mod.tukey
+```
+
+# Diseño Unifactorial de efectos aleatorios
+
+## Supuesto práctico 2
+
+Los medios de cultivo bacteriológico en los laboratorios de los hospitales proceden de diversos fabricantes. Se sospecha que la calidad de estos medios de cultivo varía de un fabricante a otro. Para comprobar esta teoría, se hace una lista de fabricantes de un medio de cultivo concreto, se seleccionan aleatoriamente los nombres de cinco de los que aparecen en la lista y se comparan las muestras de los instrumentos procedentes de éstos. La comprobación se realiza colocando sobre una placa dos dosis, en gotas, de una suspensión medida de un microorganismo clásico, Escherichia coli, dejando al cultivo crecer durante veinticuatro horas, y determinando después el número de colonias (en millares) del microorganismo que aparecen al final del período. Se quiere comprobar si la calidad del instrumental difiere entre fabricantes.
+
+**En el supuesto práctico 2:**
+
+-   Variable respuesta: Calidad_Instrumental
+-   Factor: Fabricante. Es un factor de efectos aleatorios, se han elegido aleatoriamente a cinco fabricantes, que constituyen únicamente una muestra de todos los fabricantes y el propósito no es comparar estos cinco fabricantes sino contrastar el supuesto general de que la calidad del instrumental difiere entre fabricantes.
+-   Modelo equilibrado: Los niveles de los factores tienen el mismo número de elementos (9 elementos).
+-   Tamaño del experimento: Número total de observaciones, en este caso 45 unidades experimentales.
+
+
+El problema planteado se modeliza a través de un diseño unifactorial totalmente aleatorizado de efectos aleatorios equilibrado.
+
+
+Nota: La ruta hasta llegar al fichero varía en función del ordenador. Utilizar la orden setwd() para situarse en el directorio de trabajo
+
+```{r}
+
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+
+```
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+
+Se quiere comprobar si la calidad del instrumental difiere entre fabricantes.
+
+Tenemos en cuenta que para que el ejercicio esté realizado de forma correcta los datos tienen que estar introducidos tal y como vienen en la imagen, es decir, las observaciones en una sola columna y a continuación especificado su tratamiento y su bloque correspondiente.
+
+Para cargar los datos utilizamos la función read.table indicando el nombre del archivo (que debe de estar en el directorio de trabajo) e indicando además que tiene cabecera.
+```{r}
+bacterias<-read.table("supuesto2.txt",header = TRUE)
+bacterias
+```
