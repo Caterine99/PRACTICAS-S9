@@ -277,6 +277,7 @@ semillas$Tratamiento
 semillas$Abeto=factor(semillas$Abeto)
 semillas$Abeto
 ```
+
 Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
 ```{r}
 mod=aov(y~Tratamiento+Abeto,data = semillas)
@@ -289,3 +290,1005 @@ summary(mod)
 ```
 
 # Estudio de la Idoneidad del modelo
+
+Como hemos dicho anteriormente, validar el modelo propuesto consiste en estudiar si las hipótesis básicas del modelo están o no en contradicción con los datos observados. Es decir si se satisfacen los supuestos del modelo: Normalidad, Independencia, Homocedasticidad. Para ello utilizamos procedimientos gráficos y analíticos.
+
+En este modelo se ha supuesto otra hipótesis adicional:
+Aditividad de los efectos de tratamiento y bloque (no existe interacción entre tratamiento y bloque). Por lo que hay que contrastar la hipótesis de aditividad de los efectos de tratamiento y bloque.
+
+## Hipótesis de aditividad entre los bloques y tratamientos
+La interacción entre el factor bloque y los tratamientos vamos a estudiarla analíticamente mediante el Test de Interacción de un grado de Tukey
+
+Para realizar este test en R tenemos que utilizar la library “daewr” y dentro de ella la función “Tukey1df”. De la siguiente forma:
+
+Primero hay que instalar el paquete daewr
+
+Para ello, seleccionar Paquetes/Instalar paquetes y de la lista escoger daewr. O bien utilizar la siguiente orden
+```{r}
+#utils:::menuInstallPkgs()
+```
+
+Para realizar este contraste hay que utilizar la libray daewr, para ello realizamos la siguiente orden
+
+## Hipótesis de Normalidad
+La normalidad las vamos a comprobar analíticamente y gráficamente.
+
+Analíticamente mediante el  contraste de Shapiro-Wilk que es adecuado cuando las muestras son pequeñas (n<50)
+
+```{r}
+library(daewr)
+#Tukey1df(semillas)
+```
+
+Puesto que el p-valor (Pr > F) es 1 no rechazamos la hipótesis nula de no interacción, es decir, no hay interacción entre los tratamientos aplicados y los abetos.
+
+## Hipótesis de Normalidad
+La normalidad las vamos a comprobar analíticamente y gráficamente.
+
+Analíticamente mediante el  contraste de Shapiro-Wilk que es adecuado cuando las muestras son pequeñas (n<50)
+```{r}
+shapiro.test(mod$residuals)
+```
+
+Como podemos observar tenemos un p-valor de 0.3935 que aceptaría la hipótesis de normalidad por ser mayor al 5% (nivel de significación usual).
+
+Gráficamente mediante el gráfico probabilístico normal. Para ello utilizamos la orden “qqnorm”
+```{r}
+qqnorm(mod$residuals)
+```
+En esta gráfica observamos que prácticamente todos los puntos se encuentran sobre la diagonal por lo tanto podemos decir que no muestra una desviación marcada de la normalidad.
+
+## Hipótesis de Homogeneidad de Varianzas
+Para comprobar la hipótesis de homocedasticidad utilizamos el Test de Barlett distinguiendo entre la igualdad entre varianzas del factor principal y la igualdad de varianzas del factor bloque.
+
+En nuestro ejemplo, el test para igualdad de varianzas del factor principal sería:
+
+```{r}
+bartlett.test(semillas$y, semillas$Tratamiento)
+```
+
+El p-valor es del 0.1241 que al ser mayor del nivel significación usual del 5% no podemos rechazar la hipótesis de igualdad de varianzas en el factor principal.
+
+De la misma manera procedemos para el factor bloque:
+```{r}
+bartlett.test(semillas$y, semillas$Abeto)
+```
+El p-valor es mayor que 0.05 por lo que no podemos rechazar la hipótesis de igualdad de varianzas en el factor bloque.
+
+## Hipótesis de Independencia
+Comprobaremos si se satisface el supuesto de independencia entre los residuos. Para ello tenemos que representar un gráfico de los residuos tipificados frente a los pronosticados. En R obtenemos varios gráficos a la vez que están incluidos en la estimación del modelo.
+
+Para verlos de forma correcta hacemos uso de las siguientes órdenes:
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(mod)
+```
+
+Nos fijamos en el primer gráfico que representa los  residuos frente a los valores ajustados y observamos que no hay ninguna tendencia sistemática. Concluimos que no hay sospechas para que se incumpla la hipótesis de independencia.
+
+**Comparaciones múltiples**
+Hemos probado anteriormente que se rechaza la Hipótesis nula de igualdad de tratamientos. Así, los tratamientos influyen en el número de semillas. Es decir, existen diferencias significativas en el número de semillas entre los tres tratamientos. Para saber entre que parejas de días estas diferencias son significativas aplicamos una prueba Post-hoc.
+
+El contraste de Comparaciones múltiples que vamos a utilizar es el Test de Duncan. Para poder hacer uso de él en R tenemos que instalar en primer lugar el paquete “agricolae” y dentro de él la función “duncan.test”.
+
+Destacar que este test hace las comparaciones especificándole si es para el factor principal o el factor bloque.
+
+Comenzamos con el factor principal:
+```{r}
+#(duncan=duncan.test(mod, "Tratamiento" , group = T))
+```
+En el apartado “$groups” concluimos que los tres tratamientos difieren significativamente entre sí.
+
+Se observa que la concentración media del número de semillas es mayor con el Tratamiento3 (10.1) y menor con el Tratamiento1 (8.3).
+
+Para el factor bloque:
+```{r}
+#(duncan=duncan.test(mod, 'Abeto' , group = T))
+```
+
+#Diseño en bloques Incompletos Aleatorizados
+
+En los diseños en bloques Aleatorizados, puede suceder que no sea posible realizar todos los tratamientos en cada bloque. En estos casos es posible usar diseños en bloques Aleatorizados en los que cada tratamiento no está presente en cada bloque. Estos diseños reciben el nombre de diseño en bloque incompleto aleatorizado siendo uno de los más utilizados el diseño en bloque incompleto balanceado (BIB)
+
+## Supuesto práctico 4
+
+Se realiza un estudio para comprobar la efectividad en el retraso del crecimiento de bacterias utilizando cuatro soluciones diferentes para lavar los envases de la leche. El análisis se realiza en el laboratorio y sólo se pueden realizar seis pruebas en un mismo día. Como los días son una fuente de variabilidad potencial, el investigador decide utilizar un diseño aleatorizado por bloques, pero al recopilar las observaciones durante seis días no ha sido posible aplicar todos los tratamientos en cada día, sino que sólo se han podido aplicar dos de las cuatro soluciones cada día. Se decide utilizar un diseño en bloques incompletos balanceado, donde $I = 4 y K = 2$.
+
+Un posible diseño para estos parámetros lo proporciona la tabla correspondiente al Diseño 5 del Fichero-Adjunto, con $R = 3$, $J = 6$ y $\lambda = 1$. La disposición del diseño y las observaciones obtenidas se muestran en la siguiente tabla.
+
+El objetivo principal es estudiar la efectividad en el retraso del crecimiento de bacterias utilizando cuatro soluciones, por lo que se trata de un factor con cuatro niveles. Sin embrago, como los días son una fuente de variabilidad potencial, consideramos un factor bloque con seis niveles.
+
+Variable respuesta: Número de bacterias
+-   Factor: Soluciones que tiene cuatro niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-   Bloque: Días que tiene seis niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-   Modelo incompleto: Todos los tratamientos no se prueban en cada bloque.
+-   Tamaño del experimento: Número total de observaciones (12).
+
+Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+```{r}
+bacterias = read.table('supuesto4.txt', header = TRUE)
+bacterias
+```
+
+A continuación debemos transformar tanto la columna de los tratamientos como la de los bloques en un factor para poder realizar los cálculos posteriores adecuadamente.
+```{r}
+bacterias$Soluciones = factor( bacterias$Soluciones)
+bacterias$Dias = factor( bacterias$Dias)
+```
+
+Para poder analizar los datos mediante un diseño BIB debemos instalar y cargar dos paquetes de R especializados en este tipo de diseños:
+```{r}
+library(daewr)
+library(AlgDesign)
+```
+
+La función “BIBsize(t , k)” de la librería daewr nos permite saber si el diseño puede realizarse.  Calcula los parámetros del diseño donde
+
+-   t = número de niveles del factor tratamiento.
+-   k = número de tratamientos por bloque.
+
+Ejecutamos:
+```{r}
+BIBsize(t = 4 , k = 2)
+```
+
+
+**El análisis de este modelo lo podemos realizar en R de dos formas:**
+
+**1. Realizaremos el análisis evaluando primero el efecto de los tratamientos y después el de los bloques utilizando dos funciones**
+
+-   Para evaluar el efecto de los tratamientos, la suma de cuadrados de tratamientos debe ajustarse por bloques, por lo tanto primero se introducen los bloques y después los tratamientos.
+
+-   Para calcular la tabla ANOVA hacemos uso de la función “aov” (aov(y ~ A + B, data=mydataframe) asume suma de cuadrados tipo I) de la siguiente forma:
+```{r}
+mod1<-aov(y~Dias+Soluciones, data = bacterias )
+mod1
+```
+
+y posteriormente mostramos un resumen de los resultados con la función “summary” (verdadera tabla ANOVA)
+```{r}
+summary(mod1)
+```
+El valor del estadístico de contraste de igualdad de Soluciones, F = 0.29, deja a su derecha un p-valor 0.869, mayor que el nivel de significación del 5%, por lo que no se rechaza la Hipótesis Nula de igualdad de tratamientos. Por lo tanto el tipo de solución para lavar los envases de la leche no influye en el retraso del crecimiento de bacterias.
+
+-   Para evaluar el efecto de los bloques, la suma de cuadrados de bloques debe ajustarse por los tratamientos, por lo tanto primero se introducen los tratamientos y después los bloques:
+```{r}
+mod2<-aov(y~Soluciones+Dias, data = bacterias )
+mod2
+```
+**2. Realizaremos el análisis evaluando tanto para los tratamientos como para los bloques ejecutando solo una función.**
+```{r}
+mod3<-lm(y~Soluciones+Dias, data = bacterias )
+mod3
+```
+```{r}
+car::Anova(mod3, type="III")
+```
+
+Los resultados obtenidos coinciden con los realizados primero a los tratamientos y después a los bloques.
+
+# Diseño en Cuadrados Latinos
+Hemos estudiado en el apartado anterior que los diseños en bloques completos aleatorizados utilizan un factor de control o variable de bloque con objeto de eliminar su influencia en la variable respuesta y así reducir el error experimental. Los diseños en cuadrados latinos utilizan dos variables de bloque para reducir el error experimental
+
+## Supuesto práctico 5
+Se estudia el rendimiento de un proceso químico en seis tiempos de reposo, A, B, C, D, E y F. Para ello, se consideran seis lotes de materia prima que reaccionan con seis concentraciones de ácido distintas, de manera que cada lote de materia prima en cada concentración de ácido se somete a un tiempo de reposo. Tanto la asignación de los tiempos de reposo a los lotes de materia prima, como la concentración de ácido, se hizo de forma aleatoria. Los datos del rendimiento del proceso químico se muestran en la siguiente tabla.
+
+\begin{table}[]
+\begin{tabular}{lllllll}
+       & \multicolumn{6}{l}{Concentraciones de ácido} \\
+Lote   & 1     & 2     & 3     & 4     & 5     & 6    \\
+Lote 1 & 12 A  & 24 B  & 10 C  & 18 D  & 21 E  & 18 F \\
+Lote 2 & 21 B  & 26 C  & 24 D  & 16 E  & 20 F  & 21 A \\
+Lote 3 & 20 C  & 16 D  & 19 E  & 18 F  & 16 A  & 19 B \\
+Lote 4 & 22 D  & 15 E  & 14 F  & 19 A  & 27 B  & 17 C \\
+Lote 5 & 15 E  & 13 F  & 17 A  & 25 B  & 21 C  & 22 D \\
+Lote 6 & 17 F  & 11 A  & 12 B  & 22 C  & 14 D  & 20 E
+\end{tabular}
+\end{table}
+
+El objetivo principal es estudiar la influencia de seis tiempos de reposo en el rendimiento de un proceso químico, por lo que se trata de un factor con seis niveles. Sin embargo, como los lotes de materia prima y las concentraciones son dos fuentes de variabilidad potencial, consideramos dos factores de bloque con seis niveles cada uno.
+
+-   Variable respuesta: Rendimiento
+-   Factor: Tiempo de reposo que tiene seis niveles. Es un factor de efectos fijos ya que viene decidido que niveles concretos se van a utilizar.
+-   Bloques: Lotes y Concentraciones, ambos con seis niveles y ambos son factores de efectos fijos.
+-   Tamaño del experimento: Número total de observaciones (36).
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+```{r}
+latino<-read.table("Lotes2.txt", header = TRUE,dec = ",")
+latino
+```
+
+Acontinuación debemos transformar tanto la columna de los tratamiento como la de los bloques en un factor para podemos realizar los cálculos posteriores adecuadamente.
+```{r}
+latino$Lote<-factor(latino$Lote)
+latino$Concentraciones<-factor(latino$Concentraciones)
+latino$Tiempo_de_reposo<-factor(latino$Tiempo_de_reposo)
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod1<-aov(Observaciones~ Lote+Concentraciones+Tiempo_de_reposo, data = latino )
+mod1
+```
+
+# Diseño en Cuadrados Greco-Latinos
+
+El modelo en cuadrado greco-latino se puede considerar como una extensión del modelo en cuadrado latino en el que se incluye una tercera variable control o variable de bloque. En este modelo como en el diseño en cuadrado latino, todos los factores deben tener el mismo número de niveles, K, y el número de observaciones necesarias sigue siendo $K^{2}$. Este diseño es, por tanto, una fracción del diseño completo en bloques aleatorizados con un factor principal y tres factores secundarios que requeriría $K^{4}$ observaciones.
+
+## Supuesto práctico 6
+Para comprobar el rendimiento de un proceso químico en cinco tiempos de reposo, se consideran cinco lotes de materia prima que reaccionan con cinco concentraciones de ácido distintas a cinco temperaturas distintas, de manera que cada lote de materia prima con cada concentración de ácido y cada temperatura se someten a un tiempo de reposo. Tanto la asignación de los tiempos de reposo a los lotes de materia prima, como las concentraciones de ácido, y las temperaturas, se hizo de forma aleatoria. En este estudio el científico considera que tanto los lotes de materia prima, las concentraciones y las temperaturas pueden influir en el rendimiento del proceso, por lo que los considera como variables de bloque cada una con cinco niveles y decide plantear un diseño por cuadrados greco-latinos como el que muestra en la siguiente tabla.
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+greco<-read.table("supuesto6.txt", header = TRUE, dec=",")
+greco
+```
+A continuación debemos transformar tanto la columna de los tratamiento como la de los bloques en un factor para podemos realizar los cálculos posteriores adecuadamente.
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+greco<-read.table("supuesto6.txt", header = TRUE, dec= ",")
+greco$Lote<-factor(greco$Lote)
+greco$Temperaturas<-factor(greco$Temperaturas)
+greco$Tiempo_de_reposo<-factor(greco$Tiempo_de_reposo)
+greco$Concentraciones<-factor(greco$Concentraciones)
+mod1<-aov(Observaciones~Lote+Concentraciones+Tiempo_de_reposo+Temperaturas, data = greco )
+mod1
+```
+y posteriormente mostramos un resumen de los resultados con la función “summary” (verdadera tabla ANOVA):
+```{r}
+summary(mod1)
+```
+
+Observando los valores de los p-valores, 0.1988, 0.0825, 0.9349 y 0.0420, deducimos que el único efecto significativo, al nivel de significación del 5%, es el efecto de las distintas concentraciones sobre el rendimiento del proceso químico.
+
+## Diseño en Cuadrados de Youden
+
+Hemos estudiado que en el diseño en cuadrado latino se tiene que verificar que los tres factores tengan el mismo número de niveles, es decir que hay el mismo número de filas, de columnas y de letras latinas. Sin embargo, puede suceder que el número de niveles disponibles de uno de los factores de control sea menor que el número de tratamientos, en este caso estaríamos ante un diseño en cuadrado latino incompleto. Estos diseños fueron estudiados por W.J. Youden y se conocen con el nombre de cuadrados de Youden.
+
+Este diseño lo estudiaremos a continuación mediante el supuesto práctico 7.
+
+## Supuesto práctico 7
+Consideremos de nuevo el experimento sobre el rendimiento de un proceso químico en el que se está interesado en estudiar seis tiempos de reposo, A, B, C, D, E y F y se desea eliminar estadísticamente el efecto de los lotes materia prima y de las concentraciones de ácido distintas. Pero supongamos que sólo se dispone de cinco tipos de concentraciones. Para analizar este experimento se decidió utilizar un cuadrado de Youden con seis filas (los lotes de materia prima), cinco columnas (las distintas concentraciones) y seis letras latinas (los tiempos de reposo). Los datos correspondientes se muestran en la siguiente tabla.
+
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+youden<-read.table("supuesto7.txt", header = TRUE, dec=",")
+youden
+```
+
+A continuación debemos transformar tanto la columna de los tratamiento como la de los bloques en un factor para podemos realizar los cálculos posteriores adecuadamente.
+```{r}
+youden$Lote<-factor(youden$Lote)
+youden$Concentraciones<-factor(youden$Concentraciones)
+youden$Tiempo_de_reposo<-factor(youden$Tiempo_de_reposo)
+```
+
+Para cada factor realizamos una tabla ANOVA:
+
+-   Factor principal:
+Para evaluar el efecto de los tratamientos, la suma de cuadrados de tratamientos debe ajustarse por bloques, por lo tanto primero se introducen los bloques y después los tratamientos.
+
+Para calcular la tabla ANOVA hacemos uso de la función “aov” (asume suma de cuadrados tipo I) de la siguiente forma:
+```{r}
+mod1<-aov(Observaciones~Tiempo_de_reposo+Lote+Concentraciones, data = youden )
+mod1
+```
+
+Donde:
+
+-   Observaciones: Nombre de la columna de las observaciones.
+-   Lote: Nombre de la columna en la que están representados los tratamientos.
+-   Concentraciones: Nombre de la columna en la que está representado el primer factor bloque.
+-   Tiempo_de_reposo: Nombre de la columna en la que está representado el segundo factor bloque (letras latinas).
+data = data.frame en el que están guardados los datos.
+
+ deducimos que el factor principal: Concentraciones  no es significativo.
+
+-   Factor Bloque: Lotes.
+
+Para evaluar el efecto del primero de los bloques, la suma de cuadrados de bloques debe ajustarse por los tratamientos, por lo tanto primero se introducen los tratamientos y después los bloques:
+```{r}
+mod2<-aov(Observaciones~Concentraciones+Tiempo_de_reposo+Lote , data = youden )
+mod2
+summary(mod2)
+```
+
+El  p-valor, 0.356, es mayor que el nivel de significación del 5%, deducimos que el Factor Bloque: Lotes no es significativo.
+
+Factor Bloque:Tiempo_de_reposo
+Para evaluar el efecto del segundo bloque, la suma de cuadrados de bloques debe ajustarse también por los tratamientos, por lo tanto primero se introducen los tratamientos y después los bloques:
+```{r}
+mod3<-aov(Observaciones~Concentraciones+Lote+Tiempo_de_reposo , data = youden )
+mod3
+```
+
+El p-valor es 0.213; mayor que el nivel de significación del 5%, deducimos que Factor Bloque:Tiempo_de_reposo no es significativo.
+
+#Diseños Factoriales
+
+En muchos experimentos es frecuente considerar dos o más factores y estudiar el efecto conjunto que dichos factores producen sobre la variable respuesta. Para resolver esta situación se utiliza el Diseño Factorial.
+
+Se entiende por diseño factorial aquel diseño en el que se investigan todas las posibles combinaciones de los niveles de los factores en cada réplica del experimento. En estos diseños, los factores que intervienen tienen la misma importancia a priori y se supone por tanto, la posible presencia de interacción. En este epígrafe vamos a considerar únicamente modelos de efectos fijos.
+
+## Diseños factoriales con dos factores
+
+En primer lugar vamos a estudiar los diseños más simples, es decir aquellos en los que intervienen sólo dos factores. Supongamos que hay a niveles para el factor A y b niveles del factor B, cada réplica del experimento contiene todas las posibles combinaciones de tratamientos, es decir contiene los ab tratamientos posibles.
+
+### El modelo sin replicación
+
+**Supuesto práctico 8**
+
+En unos laboratorios se está investigando sobre el tiempo de supervivencia de unos animales a los que se les suministra al azar tres tipos de venenos y cuatro antídotos distintos. Se pretende estudiar si los tiempos de supervivencia de los anímales varían en función de las combinaciones veneno-antídoto. Los datos que se recogen en la tabla adjunta son los tiempos de supervivencia en horas.
+
+\begin{table}[]
+\begin{tabular}{ccccc}
+         & \multicolumn{4}{c}{Antídoto}                              \\
+Veneno   & Antídoto   1 & Antídoto   2 & Antídoto   3 & Antídoto   4 \\
+Veneno 1 & 4.5          & 11           & 4.5          & 7.1          \\
+Veneno 2 & 2.9          & 6.1          & 3.5          & 10.2         \\
+Veneno 3 & 2.1          & 3.7          & 2.5          & 3.6         
+\end{tabular}
+\end{table}
+
+El objetivo principal es estudiar la influencia de tres tipos de venenos y 4 tipos de antídotos en el tiempo de supervivencia de unos determinados animales, por lo que se trata de un modelo con dos factores: el veneno (con tres niveles) y el antídoto (con cuatro niveles). La variable que va a medir las diferencias entre los tratamientos es el tiempo que sobreviven los animales. Se combinan todos los niveles de los dos factores por lo que tenemos en total doce tratamientos.
+
+-   Variable respuesta: Tiempo de supervivencia
+-   Factor: Tipo de veneno que tiene tres niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-   Factor: Tipo de antídoto que tiene cuatro niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-  Tamaño del experimento: Número total de observaciones (12).
+  
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+
+En este caso lo hacemos en un archivo de texto:
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+factorial<-read.table("laboratorio.txt", header = TRUE)
+factorial
+```
+
+A continuación debemos transformar todas las columnas que contienen a los factores en un factor para podemos realizar los cálculos posteriores adecuadamente.
+```{r}
+factorial$Antidoto<-factor(factorial$Antidoto)
+factorial$Veneno<-factor(factorial$Veneno)
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma
+```{r}
+mod<-aov(Tiempo~Veneno+Antidoto, data = factorial )
+mod
+```
+
+y posteriormente mostramos un resumen de los resultados con la función “summary” (verdadera tabla ANOVA):
+```{r}
+summary(mod)
+```
+
+Esta Tabla ANOVA recoge la descomposición de la varianza considerando como fuente de variación los doce tratamientos o grupos que se forman al combinar los niveles de los dos factores. Mediante esta tabla se puede estudiar sí varían los tiempos que sobreviven los animales en función de las combinaciones veneno-antídoto. Es decir, se pueden estudiar si existen diferencias significativas entre los tiempos medios de supervivencia con los distintos tipos de venenos y antídotos, pero no se puede estudiar si la efectividad de los antídotos es la misma para todos los venenos. Observando los p-valores, 0.084 y 0.099; mayores respectivamente que el nivel de significación del 5%, deducimos que ningún efecto es significativo. Por lo tanto, no existen diferencias en los tiempos medios de supervivencia de los animales, en función de la pareja veneno-antídoto que se les suministra.
+
+### El modelo con replicación
+
+**Supuesto práctico 9**
+Consideremos el supuesto práctico anterior en el que realizamos dos réplicas por cada tratamiento. Los datos que se recogen en la tabla adjunta son los tiempos de supervivencia en horas de unos animales a los que se les suministra al azar tres venenos y cuatro antídotos. El objetivo es estudiar qué antídoto es el adecuado para cada veneno.
+
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+factorial<-read.table("laboratorio2.txt", header = TRUE)
+factorial
+```
+
+A continuación debemos transformar todas las columnas que contienen a los factores en un factor para podemos realizar los cálculos posteriores adecuadamente.
+```{r}
+factorial$Veneno<-factor(factorial$Veneno)
+factorial$Antidoto<-factor(factorial$Antidoto)
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Tiempo~Veneno*Antidoto , data = factorial )
+mod
+summary(mod)
+```
+La Tabla ANOVA muestra las filas de Tipo_veneno, Tipo_antídoto y Tipo_veneno*Tipo_antídoto que corresponde a la variabilidad debida a los efectos de cada uno de los factores y de la interacción entre ambos.
+
+Las preguntas que nos planteamos son: ¿Los venenos son igual de peligrosos? ¿Y los antídotos son igual de efectivos? La efectividad de los antídotos, ¿es la misma para todos los venenos? Para responder a estas preguntas, comenzamos comprobando si el efecto de los antídotos es el mismo para todos los venenos. Para ello observamos el valor del estadístico (Fexp= 0.761) que contrasta la hipótesis correspondiente a la interacción entre ambos factores (H0: (τβ)ij = 0). Dicho valor deja a la derecha un Sig. = 0.614, mayor que el nivel de significación 0.05. Por lo tanto la interacción entre ambos factores no es significativa y debemos eliminarla del modelo. Construimos de nuevo la Tabla ANOVA en la que sólo figurarán los efectos principales
+```{r}
+mod<-aov(Tiempo~Veneno+Antidoto , data = factorial )
+mod
+summary(mod)
+```
+
+Esta tabla muestra dos únicas fuentes de variación, lo efectos principales de los dos factores (Tipo_veneno y Tipo_antídoto), y se ha suprimido la interacción entre ambos. Se observa que el valor de la Suma de Cuadrados del error de este modelo (73.873) se ha formado con los valores de las Sumas de cuadrados del error y de la interacción del modelo anterior (20.363 + 53.510 = 73.873). Observando los valores de los p-valores, 0.0046 y 0.0117 asociados a los contrastes principales, se deduce que los dos efectos son significativos a un nivel de significación del 5%. Deducimos que ni la gravedad de los venenos es la misma, ni la efectividad de los antídotos, pero dicha efectividad no depende del tipo de veneno con el que se administre ya que la interacción no es significativa.
+
+## Diseños factoriales con tres factores
+Supongamos que hay **a** niveles para el factor **A**, **b** niveles del factor **B** y **c** niveles para el factor **C** y que cada réplica del experimento contiene todas las posibles combinaciones de tratamientos, es decir contiene los abc tratamientos posibles.
+
+### Modelo sin replicación
+
+**Supuesto práctico 10**
+En una fábrica de refrescos está haciendo unos estudios en la planta embotelladora. El objetivo es obtener más uniformidad en el llenado de las botellas. La máquina de llenado teóricamente llena cada botella a la altura correcta, pero en la práctica hay variación, y la embotelladora desea entender mejor las fuentes de esta variabilidad para eventualmente reducirla. En el proceso se pueden controlar tres factores durante el proceso de llenado: El % de carbonato (factor A), la presión del llenado (factor B) y el número de botellas llenadas por minuto que llamaremos velocidad de la línea (factor C). Se consideran tres niveles para el factor A (10%, 12%, 14%), dos niveles para el factor B (25psi, 30psi) y dos niveles para el factor C (200bpm, 250bpm). Los datos recogidos de la desviación de la altura objetivo se muestran en la tabla adjunta
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+factorial<-read.table("embotelladora.txt", header = TRUE)
+factorial
+```
+
+A continuación debemos transformar la tres columnas en factores para poder realizar los cálculos posteriores adecuadamente.
+```{r}
+factorial$Carbono<-factor(factorial$Carbono)
+factorial$Velocidad<-factor(factorial$Velocidad)
+factorial$Presion<-factor(factorial$Presion)
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Altura~ Carbono + Presion + Velocidad + Carbono*Presion + Carbono*Velocidad + Presion*Velocidad , data = factorial )
+mod
+summary(mod)
+```
+
+la Tabla ANOVA muestra las filas de Carbono, Presión, Velocidad, Carbono\*Presión, Carbono\*Velocidad y Presión\*Velocidad que corresponden a la variabilidad debida a los efectos de cada uno de los factores y a las interacciones de orden dos entre ambos. En dicha Tabla se indica que para un nivel de significación del 5% los efectos que no son significativos del modelo planteado son las interacciones entre los factores Carbono\*Presión y Presión*Velocidad ya que los p-valores correspondientes a estos efectos son 0.125 y 0.057 mayores que el nivel de significación.
+
+Como consecuencia de este resultado, replanteamos el modelo suprimiendo en primer lugar el efecto Carbono*Presión, cuya significación es mayor,
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Velocidad+Presion*Velocidad , data = factorial )
+summary(mod)
+```
+
+El efecto Presión*Velocidad sigue siendo no significativo por lo que lo suprimimos del modelo y replanteamos el siguiente modelo matemático
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Velocidad, data = factorial )
+summary(mod)
+```
+Todos los efectos de este último modelo planteado son significativos y por lo tanto es en este modelo donde vamos a realizar el estudio. Existen diferencias significativas entre los distintos porcentajes del Carbono, los dos tipos de presión, las dos velocidades de llenado y la interacción entre el porcentaje de Carbono y la Velocidad de llenado.
+
+# Diseño factorial de tres factores con replicación
+
+## Supuesto práctico 11
+Consideremos el supuesto práctico anterior en el que realizamos dos réplicas por cada tratamiento. En la Tabla adjunta se muestran los datos recogidos de la desviación de la altura objetivo de las botellas de refresco. En el proceso de llenado, la embotelladora puede controlar tres factores durante el proceso: El porcentaje de carbonato (factor A) con tres niveles (10%, 12%, 14%), la presión del llenado (factor B) con dos niveles (25psi, 30psi) y el número de botellas llenadas por minuto que llamaremos velocidad de la línea (factor C) con dos niveles (200bpm, 250bpm).
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+factorial<-read.table("embotelladora2.txt", header = TRUE)
+factorial
+```
+
+A continuación debemos transformar las tres columnas en factores para poder realizar los cálculos posteriores adecuadamente.
+```{r}
+factorial$Carbono<-factor(factorial$Carbono)
+factorial$Velocidad<-factor(factorial$Velocidad)
+factorial$Presion<-factor(factorial$Presion)
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Presion+Carbono*Velocidad+Presion*Velocidad+Carbono*Velocidad*Presion, data = factorial )
+summary(mod)
+```
+
+La Tabla ANOVA muestra las filas de Carbono, Presión, Velocidad, Carbono\*Presión, Carbono\*Velocidad, Presión\*Velocidad y Carbono\*Presión\*Velocidad que corresponden a la variabilidad debida a los efectos de cada uno de los factores, a las interacciones de orden dos y orden tres entre los factores. En dicha Tabla se indica que para un nivel de significación del 5% los efectos que no son significativos del modelo planteado son las interacciones entre los factores, Carbono\*Presión y Presión\*Velocidad y Carbono\*Presión*Velocidad ya que los p-valores correspondientes a estos efectos son 0.425, 0.668 y 0.894 mayores que el nivel de significación.
+
+Como consecuencia de este resultado, replanteamos el modelo suprimiendo en primer lugar el efecto Carbono\*Presión*Velocidad, cuya significación es mayor, y resulta el siguiente modelo matemático:
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Presion+Carbono*Velocidad+Presion*Velocidad, data = factorial )
+summary(mod)
+```
+
+Los efectos Carbono\*Presión y Presión*Velocidad siguen siendo no significativos.
+
+Suprimimos el efecto Presión*Velocidad que tiene una no significatividad más alta y replanteamos el siguiente modelo matemático
+
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Presion+Carbono*Velocidad, data = factorial )
+summary(mod)
+```
+
+El efecto Carbono*Presión sigue siendo no significativo por lo tanto lo suprimimos y replanteamos el siguiente modelo matemático
+```{r}
+mod<-aov(Altura~Carbono+Presion+Velocidad+Carbono*Velocidad, data = factorial )
+summary(mod)
+```
+Todos los efectos de este último modelo planteado son significativos y por lo tanto es en este modelo donde vamos a realizar el estudio. Existen diferencias significativas entre los distintos porcentajes del Carbono, los dos tipos de presión, las dos velocidades de llenado y la interacción entre el porcentaje de Carbono y la Velocidad de llenado.
+
+# Ejercicios
+
+## Ejercicios Guiados
+
+### Ejercicio Guiado1
+
+Se realiza un estudio del contenido de azufre en cinco yacimientos de carbón. Se toman muestras aleatoriamente de cada uno de los yacimientos y se analizan. Los datos del porcentaje de azufre por muestra se indican en la tabla adjunta.
+
+\begin{table}[]
+\begin{tabular}{ll}
+Yacimientos & Porcentaje de azufre                                                    \\
+1           & 151     192    108      204    214     176      117                     \\
+2           & 169       64        90    141    101       128    159     156           \\
+3           & 122       132    139    133      154     104     225      149     130   \\
+4           & 75      126      69      62        90     120       32        73        \\
+5           & 80      90    124         82     72       57        118      54     130
+\end{tabular}
+\end{table}
+
+
+Para un nivel de significación del 5%.
+
+1. ¿Se puede confirmar que el porcentaje de azufre es el mismo en los cinco yacimientos?
+2. Si se rechaza la hipótesis nula que las medias de porcentaje de azufre en los cinco yacimientos es la misma, determinar que medias difieren entre sí utilizando el método de comparaciones múltiples de Tukey.
+3. Estudiar las hipótesis de modelo: Homocedasticidad (Homogeneidad de las varianzas por grupo), Independencia y Normalidad
+
+**Solución:**
+**1. ¿Se puede confirmar que el porcentaje de azufre es el mismo en los cinco yacimientos?**
+
+El problema planteado se modeliza a través de un diseño unifactorial totalmente aleatorizado de efectos fijos no-equilibrado.
+
+-   Variable respuesta: Contenido de Azufre
+-   Factor: Tipo de yacimiento con cinco niveles. Es un factor de Efectos fijos ya que viene decidido qué niveles concretos se van a utilizar 
+-   Modelo no-equilibrado: Los niveles de los factores tienen distinto número de elementos
+-   Tamaño del experimento: Número total de observaciones, en este caso 41 unidades experimentales.
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos realizarlo directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+
+En este caso lo hacemos en un archivo de texto:
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+porcentaje<-read.table("guiado1.txt", header = TRUE)
+porcentaje
+```
+
+Debemos transformar la variable referente a los niveles del factor fijo como factor para poder hacer los cálculos de forma adecuada:
+```{r}
+porcentaje$Yacimiento<-factor(porcentaje$Yacimiento)
+porcentaje$Yacimiento
+
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod <- aov(Azufre ~ Yacimiento, data = porcentaje)
+mod
+summary(mod)
+```
+
+En la Tabla ANOVA, el valor del estadístico de contraste de igualdad de medias, F = 8.534 deja a su derecha un p-valor menor que 0.001, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de igualdad de medias. Es decir, existen diferencias significativas en el contenido medio de azufre entre los cinco yacimientos. La pregunta que nos planteamos es si el contenido de azufre es significativamente distinto en los cinco yacimientos o sólo en alguno de ellos. Para responder a esta pregunta utilizamos algún procedimiento de comparaciones múltiples. En el apartado siguiente responderemos a esta cuestión.
+
+**2.Si se rechaza la hipótesis nula que las medias de porcentaje de azufre en los cinco yacimientos es la misma, determinar que medias difieren entre sí utilizando el método de comparaciones múltiples de Tukey.**
+```{r}
+mod.tukey<-TukeyHSD(mod, ordered = TRUE)
+mod.tukey
+```
+
+Se comprueba que no se detectan diferencias significativas entre los yacimientos 1, 2 y 3 y entre los yacimientos 2, 4 y 5. Para ello nos fijamos en las Significaciones (mayores que 0.05) o en los límites de los intervalos. Dos medias se declaran iguales si el cero pertenece al intervalo de confianza construido para la diferencia de ellas.
+
+**3. Estudiar las hipótesis de modelo: Homocedasticidad (Homogeneidad de las varianzas por grupo), Independencia y Normalidad.**
+
+**Hipótesis de Homocedasticidad: Test de Barlett**
+```{r}
+bartlett.test(porcentaje$Azufre, porcentaje$Yacimiento)
+```
+La salida muestra el resultado del contraste de Barlett de igualdad de varianzas en todos los grupos. El estadístico de contraste experimental, B= 1.2655, deja a la derecha un p-valor = 0.8672, que nos indica que no se debe rechazar la igualdad entre las varianzas.
+
+Hipótesis de Independencia: Esta hipótesis la comprobaremos gráficamente mediante la representación de los residuos frente a los valores pronosticados por el modelo.
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(mod)
+```
+
+En esta salida interpretamos el gráfico que se muestra en la Fila 1, Columna 1. Es decir, el gráfico el que se representan los residuos en el eje de ordenadas y los valores ajustados por el modelo en el eje de abscisas. Este gráfico no muestra ningún aspecto que haga sospechar de la hipótesis de independencia de los residuos.
+
+La hipótesis de Normalidad la comprobaremos gráficamente y analíticamente
+
+Gráficamente comprobaremos la normalidad mediante un histograma y el gráfico Q-Q plot
+
+En primer lugar realizaremos el histograma, para ello
+
+En primer lugar calculemos los residuos del modelo
+```{r}
+g=mod$residuals
+g
+```
+
+Calculamos la media de los residuos
+```{r}
+m=mean(g)
+m
+```
+
+Calculamos la desviación típica
+```{r}
+std=sqrt(var(g))
+std
+```
+
+Representamos el histograma
+```{r}
+hist(g, prob = TRUE, xlab ="Residuos", ylim = c(0, 0.025), main = "F. dens. Normal hist. de residuos")
+
+curve(dnorm(x, mean = m, sd = std), col ="darkblue", lwd =2, add = TRUE, yaxt ="n")
+```
+
+Anteriormete hemos realizado el gráfico Q-Q. Ambos gráficos no muestran desviación importante de la normalidad.
+
+Analíticamente lo vamos a comprobar mediante el contraste de Shapiro-Wilk
+```{r}
+shapiro.test(mod$residuals)
+```
+
+El valor del p-valor (Sig. asintót. (bilateral)) es de 0.6384, por lo tanto no podemos rechazar la hipótesis de normalidad.
+
+### Ejercicio Guiado 2
+
+Se realiza un estudio sobre el efecto del fotoperiodo y del genotipo en el periodo latente de infección del moho de cebada aislado AB3. Se obtienen cincuenta hojas de cuatro genotipos distintos. Cada grupo es infectado y posteriormente expuesto a diferente fotoperiodo. Los distintos fotoperiodos se trataron como bloques y se obtuvieron los siguientes datos de los totales para los bloques y tratamientos. La respuesta anotada es el número de días hasta la aparición de síntomas visibles.
+
+\begin{table}[]
+\begin{tabular}{|c|ccccc|}
+\hline
+         & \multicolumn{5}{c|}{Fotoperiodo   (horas de oscuridad por ciclo de 24 horas)}                                   \\ \hline
+Genotipo & \multicolumn{1}{c|}{0}   & \multicolumn{1}{c|}{2}   & \multicolumn{1}{c|}{4}   & \multicolumn{1}{c|}{8}   & 16  \\ \hline
+Armelle  & \multicolumn{1}{c|}{630} & \multicolumn{1}{c|}{610} & \multicolumn{1}{c|}{560} & \multicolumn{1}{c|}{570} & 590 \\ \hline
+Golden   & \multicolumn{1}{c|}{640} & \multicolumn{1}{c|}{630} & \multicolumn{1}{c|}{600} & \multicolumn{1}{c|}{620} & 620 \\ \hline
+Promise  & \multicolumn{1}{c|}{640} & \multicolumn{1}{c|}{630} & \multicolumn{1}{c|}{650} & \multicolumn{1}{c|}{620} & 580 \\ \hline
+Emir     & \multicolumn{1}{c|}{660} & \multicolumn{1}{c|}{660} & \multicolumn{1}{c|}{620} & \multicolumn{1}{c|}{610} & 630 \\ \hline
+         & \multicolumn{1}{c|}{}    & \multicolumn{1}{c|}{}    & \multicolumn{1}{c|}{}    & \multicolumn{1}{c|}{}    &     \\ \hline
+\end{tabular}
+\end{table}
+
+1. ¿Se puede afirmar que los diferentes genotipos no influyen en el número de días hasta la aparición de la infección? ¿Se puede concluir que los distintos fotoperiodos no afectan al tiempo de aparición de los síntomas de infección del moho?
+2. En caso de que influyan significativamente alguno de los dos factores, extraer conclusiones utilizando el método de Duncan.
+3. Estudiar las hipótesis de modelo: Homocedasticidad, Independencia y Normalidad.
+
+**Solución:**
+1. ¿Se puede afirmar que los diferentes genotipos no influyen en el número de días hasta la aparición de la infección? ¿Se puede concluir que los distintos fotoperiodos no afectan al tiempo de aparición de los síntomas de infección del moho?
+
+En este caso se trata de un diseño en bloques completos aleatorizados. El objetivo del estudio es comparar los cuatro tipos de genotipos, por lo que se trata de un factor con cuatro niveles. Sin embargo, al realizar la medición con los distintos fotoperiodos a los que son expuestos el moho de cebada, es posible que estos influyan sobre el periodo latente de infección del moho de cebada aislado AB3. Por ello, y al no ser directamente motivo de estudio, los fotoperiodos es un factor secundario que recibe el nombre de bloque.
+
+-   Variable respuesta: Número de días hasta la aparición de síntomas visibles
+-   Factor: Genotipo que tiene cuatro niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-   Bloque: Fotoperiodo que tiene cinco niveles. Es un factor de efectos fijos ya que viene decidido qué niveles concretos se van a utilizar.
+-   Modelo completo: Los cuatro tratamientos se prueban en cada bloque exactamente una vez.
+-   Tamaño del experimento: Número total de observaciones (20).
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+dias<-read.table("guiado2.txt", header = TRUE)
+dias
+```
+
+A continuación debemos transformar tanto la columna de los tratamientos como la de los bloques en un factor para realizar los cálculos posteriores adecuadamente.
+```{r}
+dias$Fotoperiodo = factor(dias$Fotoperiodo)
+dias$Fotoperiodo
+dias$Genotipo = factor(dias$Genotipo)
+dias$Genotipo
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma
+```{r}
+mod=aov(Dias~Fotoperiodo+Genotipo, data = dias)
+mod
+summary(mod)
+```
+
+En la Tabla ANOVA, el valor del estadístico de contraste de igualdad de medias de tratamientos, F = 5.041 deja a su derecha un p-valor igual a 0.017, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de igualdad de medias de tratamientos. Es decir, existen diferencias significativas en el número de días hasta la aparición de la infección entre los cuatro genotipos.
+
+En esta Tabla ANOVA, también se observa que el valor del estadístico de contraste de igualdad de medias de bloques, F = 3.619 deja a su derecha un p-valor igual a 0.037, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de igualdad de medias de bloques. Es decir, existen diferencias significativas en el número de días hasta la aparición de la infección entre los cinco tipos de fotoperiodos. Por lo tanto, se concluye que los niveles de ambos factores influyen de forma significativa en el número de días hasta la aparición de los síntomas de infección del moho.
+
+**2. En caso de que influyan significativamente alguno de los dos factores, extraer conclusiones utilizando el método de Duncan.**
+
+**Primero vamos a hacer el contraste de Duncan para los tratamientos: Genotipos**
+```{r}
+
+#duncan<-duncan.test(mod,"Genotipo" ,   main="Numero de dias con diferentes genotipos")
+#duncan
+```
+
+En la tabla del factor Tipo de genotipo hay dos subconjuntos que se diferencian entre sí; el subconjunto 1 está formado por las medias del genotipo Armelle y el subconjunto 2 por las medias de los genotipos Golden, Promise y Emir. Y dentro de cada subconjunto no se aprecian diferencias significativas entre las medias. También se observa que en el genotipo Emir se produce el mayor número medio de días hasta la aparición de la infección (636) y en el genotipo Armelle se produce el menor (592).
+
+**Segundo vamos a hacer el contraste de Duncan para los bloques: Fotoperiodos**
+```{r}
+
+#duncan1<-duncan.test(mod,"Fotoperiodo",  main="Número de días con diferentes fotoperiodos")
+#duncan1
+```
+
+**3. Estudiar las hipótesis de modelo: Homocedasticidad, Independencia y Normalidad.**
+
+
+**Estudiamos la homocedasticidad mediante el test de Barlett**
+```{r}
+bartlett.test(dias$Dias,  dias$Fotoperiodo)
+bartlett.test(dias$Dias,  dias$Genotipo)
+```
+
+Las Tablas muestran los resultados del contraste de Barlett de igualdad de varianzas en todos los grupos del factor genotipo y en todos los grupos del factor Fotoperiodo. Los P-valores, 0.5474 y 0.6537 indican que indican que no se debe rechazar la igualdad entre las varianzas ni el factor genotipo ni el factor fotoperiodo.
+
+**Estudiamos la independencia gráficamente**
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(mod)
+```
+
+En esta salida, como en la figura 28, interpretamos el gráfico que se muestra en la Fila 1, Columna 1. Es decir, el gráfico el que se representan los residuos en el eje de ordenadas y los valores predichos por el modelo en el eje de abscisas. Este gráfico no muestra ningún aspecto que haga sospechar de la hipótesis de independencia de los residuos.
+
+**Estudiamos la Normalidad gráficamente mediante el gráfico probabilístico normal y analíticamente mediante el contraste de Shapiro-Wilk**
+
+Observamos el gráfico que se muestra en la Fila 2, Columna1. Es decir, el gráfico el que se representan los residuos estandarizados en el eje de ordenadas y cuantiles teóricos en el eje de abscisas. En dicho gráfico se aprecian desviaciones a la normalidad, pero el contraste ANOVA es robusto frente a desviaciones pequeñas de la normalidad. Realizaremos a continuación el contraste de Shapiro-Wilk para comprobar analíticamente la normalidad de los residuos.
+```{r}
+shapiro.test(mod$residuals)
+```
+
+El valor del p-valor es de 0.4176, no pudiéndose rechazar la hipótesis de normalidad.
+
+### Ejercicio Guiado 3 
+Se realiza un estudio para determinar el efecto del nivel del agua y del tipo de planta sobre la longitud global del tallo de las plantas de guisantes. Para ello, se utilizan tres niveles de agua (bajo, medio y alto) y dos tipos de plantas (sin hojas y convencional). Se dispone para el estudio de dieciocho plantas sin hojas y dieciocho plantas convencionales. Se dividen aleatoriamente los dos tipos de plantas en tres subgrupos y después se asignan los niveles de agua aleatoriamente a los dos grupos de plantas. Los datos sobre la longitud del tallo de los guisantes (en centímetros) se muestran en la siguiente tabla:
+
+\begin{table}[]
+\begin{tabular}{|l|lll|}
+\hline
+               & \multicolumn{3}{l|}{Nivel del agua}                                                                                                                                                                                                                                                                                                                                                                                  \\ \hline
+Tipo de planta & \multicolumn{1}{l|}{Bajo}                                                                                                                & \multicolumn{1}{l|}{Medio}                                                                                                                    & Alto                                                                                                                      \\ \hline
+Sin hojas      & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}69.50\\    \\ 69.00\\    \\ 75.00\\    \\ 70.00\\    \\ 74.40\\    \\ 75.00\end{tabular}} & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}96.10\\    \\ 102.30\\    \\ 107.50\\    \\ 103.60\\    \\ 100.70\\    \\ 101.80\end{tabular}} & \begin{tabular}[c]{@{}l@{}}121.00\\    \\ 122.90\\    \\ 123.10\\    \\ 125.70\\    \\ 125.20\\    \\ 120.10\end{tabular} \\ \hline
+Convencional   & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}71.10\\    \\ 69.20\\    \\ 70.40\\    \\ 73.20\\    \\ 71.20\\    \\ 70.90\end{tabular}} & \multicolumn{1}{l|}{\begin{tabular}[c]{@{}l@{}}81.00\\    \\ 85.80\\    \\ 86.00\\    \\ 87.50\\    \\ 88.10\\    \\ 87.60\end{tabular}}      & \begin{tabular}[c]{@{}l@{}}101.10\\    \\ 103.20\\    \\ 106.10\\    \\ 109.70\\    \\ 110.00\\    \\ 99.00\end{tabular}  \\ \hline
+\end{tabular}
+\end{table}
+
+Para un nivel de significación del 5%.
+
+1. ¿Se puede afirmar que los distintos niveles de agua influyen en la longitud del tallo de los guisantes? ¿Y el tipo de planta?
+2. ¿La efectividad del nivel del agua es la misma para los dos tipos de plantas?
+3. Estudia, utilizando el método de Newman-Keuls, qué nivel de agua es más efectivo.
+
+**Solución:**
+
+**1. ¿Se puede afirmar que los distintos niveles de agua influyen en la longitud del tallo de los guisantes? ¿Y el tipo de planta?**
+
+El problema planteado se modeliza a través de un ‘diseño de dos factores con replicación
+
+-   Variable respuesta: Longitud del tallo
+-   Factor A: Nivel del agua con tres niveles. Es un factor de Efectos fijos.
+-   Factor B: Tipo de planta con dos niveles. Es un factor de Efectos fijos.
+-   Tamaño del experimento: Número total de observaciones (36).
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R.
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+factorial<-read.table("guiado3.txt", header = TRUE)
+factorial
+```
+
+A continuación debemos transformar todas las columnas que contienen a los factores en un factor para poder realizar los cálculos posteriores adecuadamente.
+```{r}
+factorial$agua<-factor(factorial$Nivel_agua)
+factorial$agua
+
+factorial$planta<-factor(factorial$Tipo_planta)
+factorial$planta
+```
+
+Para responder a este apartado debe resolverse el contraste de igualdad de medias para el factor A:
+
+Para calcular la tabla ANOVA en R primero hacemos uso de la función “aov”  y a continuación “summary” de la siguiente forma:
+```{r}
+mod=aov(Longitud_tallo~agua*planta , data = factorial)
+mod
+summary(mod)
+```
+
+-   El valor del estadístico de contraste de igualdad de medias del factor Nivel_agua, F= 572.56 deja a su derecha un p-valor menor que 0.001, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de igualdad de medias de los niveles del factor Nivel_agua. Es decir, existen diferencias significativas en la longitud del tallo de guisantes dependiendo del nivel del agua.
+
+-   El valor del estadístico de contraste de igualdad de medias del factor Tipo_planta, F= 132.445 deja a su derecha un p-valor menor que 0.001, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de igualdad  de  medias del  factor  Tipo_planta.  Es decir,  el tipo de  planta  afecta significativamente a la longitud del tallo de guisantes.
+
+**2. ¿La efectividad del nivel del agua es la misma para los dos tipos de plantas?**
+
+En la Tabla ANOVA mostrada anteriormente, el valor del estadístico de contraste de la interacción de los dos factores, F= 27.32 deja a su derecha un p-valor menor que 0.001, menor que el nivel de significación del 5%, por lo que se rechaza la Hipótesis nula de no interacción entre los factores. Por lo tanto la efectividad del nivel de agua no es la misma para los dos tipos de plantas. Es decir, puede ocurrir que un nivel de agua influya en el crecimiento de la longitud del tallo con un tipo de planta pero no con el otro o influya de distinta forma.
+
+**3. Estudia, utilizando el método de Newman- Keuls, qué nivel de agua es más efectivo.**
+```{r}
+library(agricolae)
+contraste<-SNK.test(mod,"agua", console=TRUE, main="Contraste de Newman-Keuls para el factor nivel del agua")
+```
+
+# Ejercicios Propuestos
+
+## Ejercicio Propuesto 1
+
+La convección es una forma de transferencia de calor por los fluidos debido a sus variaciones de densidad por la temperatura; las partes calientes ascienden y las frías descienden formando las corrientes de convección que hacen uniforme la temperatura del fluido. Se ha realizado un experimento para determinar las modificaciones de la densidad de fluido al elevar la temperatura en una determinada zona. Los resultados obtenidos han sido los siguientes:
+
+\begin{table}[]
+\begin{tabular}{|c|ccccc|}
+\hline
+Temperatura & \multicolumn{5}{c|}{Densidad}                                                                                         \\ \hline
+100         & \multicolumn{1}{c|}{21.8} & \multicolumn{1}{c|}{21.9} & \multicolumn{1}{c|}{21.7}  & \multicolumn{1}{c|}{21.6} & 21.7 \\ \hline
+125         & \multicolumn{1}{c|}{21.7} & \multicolumn{1}{c|}{21.4} & \multicolumn{1}{c|}{21.5}  & \multicolumn{1}{c|}{21.4} &      \\ \hline
+150         & \multicolumn{1}{c|}{21.9} & \multicolumn{1}{c|}{21.8} & \multicolumn{1}{c|}{21.8}  & \multicolumn{1}{c|}{21.6} & 21.5 \\ \hline
+175         & \multicolumn{1}{c|}{21.9} & \multicolumn{1}{c|}{22.1} & \multicolumn{1}{c|}{21.85} & \multicolumn{1}{c|}{21.9} &      \\ \hline
+\end{tabular}
+\end{table}
+
+Responder a las siguientes cuestiones:
+
+1. ¿Afecta la temperatura a la densidad del fluido?
+2. Determinar qué temperaturas producen modificaciones significativas en la densidad media del fluido.
+3. Estudiar las hipótesis del modelo: Homocedasticidad, independencia y normalidad.
+4. ¿Se puede afirmar que las temperaturas de 100 y 125 producen menos densidades de fluido en promedio que las temperaturas de 150 y 175?
+
+**Solución:**
+El problema planteado se modeliza a través de un diseño unifactorial totalmente aleatorizado de efectos fijos no-equilibrado.
+-   Variable respuesta: Densidad del fluido.
+-   Factor: Temperatura: Es un factor de Efectos fijos.
+-   Modelo no-equilibrado: Los niveles de los factores tienen distinto número de elementos.
+
+**1. ¿Afecta la temperatura a la densidad del fluido?**
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+propuesto1<-read.table("propuesto1.txt", header = TRUE)
+propuesto1 
+
+```
+
+Debemos transformar la variable referente a los niveles del factor fijo como factor para poder hacer los cálculos de forma adecuada
+```{r}
+propuesto1$Temperatura<-factor(propuesto1$Temperatura)
+propuesto1$Temperatura 
+
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Densidad~Temperatura,data=propuesto1)
+mod
+summary(mod)
+```
+
+El valor de F experimental 6.983, deja a su derecha un p-valor = 0.00419 inferior a 0.05, por lo que se rechaza la hipótesis nula de igualdad de medias. Concluyendo que existen diferencias significativas en la densidad del fluido en función de la modificación de la temperatura
+
+**2. Determinar qué temperaturas producen modificaciones significativas en la densidad media del fluido.**
+
+Se plantea entonces la pregunta de si la densidad media del fluido es significativamente diferente para las 4 temperaturas analizadas o sólo para alguna de ellas. Esta cuestión se resuelve mediante los contrastes de comparaciones múltiples. Vamos a utilizar la prueba de Tukey, obteniéndose los siguientes resultados:
+```{r}
+mod.tukey<-TukeyHSD(mod, ordered = TRUE)
+mod.tukey 
+
+```
+
+La tabla de comparaciones múltiples muestra los intervalos simultáneos construidos por el método de Tukey para cada posible combinación de temperaturas. 
+
+A partir de la tabla de comparaciones múltiples se deduce que sólo se observan diferencias significativas entre las densidades de los fluidos cuando se ha modificado la temperatura a 125 y 175 grados (significación inferior a 0.05). 
+
+Como se puede observar todos los intervalos de confianza construidos para las diferencias entre las densidades medias contienen al 0, lo que significa que dichas densidades medias pueden considerarse iguales. Sin embargo, la significación asociada al contraste de las densidades medias correspondientes a las temperaturas de 125 y 175 grados es inferior a 0.05, lo que se traduce en que existe evidencia empírica de que ambas densidades medias son diferentes.  
+
+Aplicaremos también el contraste de comparaciones múltiples de Duncan
+
+Primero instalaremos la librería “agricolae”
+```{r}
+library(agricolae)
+duncan<-duncan.test(mod, "Temperatura" ,main=" Modificaciones de la densidad de fluido al elevar la temperatura ")
+duncan
+```
+
+En la tabla Subconjuntos homogéneos asociada al contraste de Duncan se muestra por columnas los subgrupos de medias iguales. En nuestro estudio sobre las densidades de los fluidos se observan que la densidad media para temperaturas de 100, 125 y 150 se pueden considerar iguales y las densidades medias del fluido analizado pueden considerarse similares cuando las temperaturas son 100, 150 y 175 grados
+
+El p-valor asociado al primer grupo de temperaturas (100, 125 y 150) es 0.105, mayor que 0.05 lo que significa que se puede aceptar la hipótesis de igualdad en la densidad media para este subgrupo. Análogamente ocurre con el otro subgrupo formado.
+
+La densidad media de fluido es mayor a la temperatura de 175 grados (21.94) y menor a la temperatura de 125 grados (21.5).
+
+**3. Estudiar las hipótesis del modelo: Homocedasticidad, independencia y normalidad**
+
+Validar el modelo propuesto consiste en estudiar si las hipótesis básicas del modelo están o no en contradicción con los datos observados. Es decir, si se satisfacen los supuestos del modelo: Normalidad, Independencia y Homocedasticidad.
+
+Hipótesis de HOMOCEDASTICIDAD
+
+El primer aspecto que vamos a considerar es el de la homocedasticidad, la igualdad de varianzas, para ello, vamos a utilizar el test de Barlett
+```{r}
+bartlett.test(propuesto1$Densidad, propuesto1$Temperatura)
+```
+
+La salida muestra el resultado del contraste de Barlett de igualdad de varianzas en todos los grupos. El estadístico de contraste experimental, B= 0.69212, deja a la derecha un p-valor = 0.8751, que nos indica que no se debe rechazar la igualdad entre las varianzas entre las densidades registradas para las diferentes temperaturas.
+
+Hipótesis de INDEPENDENCIA
+
+Hipótesis de Independencia: Esta hipótesis la comprobaremos gráficamente mediante la representación de los residuos frente a los valores pronosticados por el modelo.
+```{r}
+layout(matrix(c(1,2,3,4),2,2))
+plot(mod)
+
+```
+
+En esta figura se muestran cuatro gráficos. Para comprobar que se satisface el supuesto de independencia entre los residuos, observamos el primer gráfico que se representan los residuos en el eje de ordenadas y los valores pronosticados en el eje de abscisas. La presencia de alguna tendencia en el gráfico puede indicar la alteración de dicha hipótesis. En este gráfico no se observa ninguna tendencia concreta lo que muestra la no existencia de relación de dependencia. 
+
+Hipótesis de NORMALIDAD
+
+La hipótesis de Normalidad la comprobaremos gráficamente y analíticamente
+
+Gráficamente comprobaremos la normalidad mediante el histograma y el gráfico Q-Q plot
+
+En la figura 1, el gráfico Q-Q plot es el que se muestra en la Fila 2, Columna 1. En el que se representa los residuos frente a los cuantiles.
+
+El gráfico Q-Q plot es el procedimiento gráfico más utilizado para comprobar la normalidad de un conjunto de datos. El Gráfico representa las funciones de distribución teórica y empírica (Cuantiles teóricos frente a cuantiles muestrales). En el eje de ordenadas se representa la función teórica bajo el supuesto de normalidad y en el eje de abscisas, la función empírica. Desviaciones de los puntos del gráfico respecto de la diagonal indican alteraciones de la normalidad. Observamos la ubicación de los puntos del gráfico en la figura 1, estos puntos se aproximan razonablemente bien a la diagonal lo que confirma la hipótesis de normalidad.
+
+Para representar el histograma, en primer lugar calculemos los residuos del modelo
+```{r}
+g = mod$residuals
+g
+```
+
+Calculamos la media de los residuos
+```{r}
+m=mean(g)
+m
+```
+
+Calculamos la desviación típica
+```{r}
+std=sqrt(var(g))
+std
+
+```
+
+Representamos el histograma
+```{r}
+hist(g, prob = TRUE, xlab ="Residuos", ylim = c(0, 5), main = "F. dens. Normal hist. de residuos")
+curve(dnorm(x, mean = m, sd = std), col ="darkblue", lwd =2, add = TRUE, yaxt ="n")
+```
+
+En la Figura 3 hemos representado el histograma y la curva normal. Observamos que, como el gráfico Q-Q, no muestra desviaciones importantes a la normalidad
+
+Analíticamente, vamos a comprobar la hipótesis de normalidad mediante el contraste de Shapiro-Wilk
+```{r}
+shapiro.test(mod$residuals)
+```
+El valor del p-valor es de 0.3712, por lo tanto no podemos rechazar la hipótesis de normalidad de los residuos
+
+**4. Se puede afirmar que las temperaturas de 150 y 125 producen menos densidades de fluido en promedio que las temperaturas de 100 y 175**
+
+En el apartado 2, el test de Duncan nos muestra
+
+Se muestra en la tabla que las temperaturas de 150 y 125 producen menos densidades de fluido en promedio que las temperaturas de 100 y 175
+
+## Ejercicio Propuesto 2
+
+Un laboratorio de reciclaje controla la calidad de los plásticos utilizados en bolsas. Se desea contrastar si existe variabilidad en la calidad de los plásticos que hay en el mercado. Para ello, se eligen al azar cuatro plásticos y se les somete a una prueba para medir el grado de resistencia a la degradación ambiental. De cada plástico elegido se han seleccionado ocho muestras y los resultados de la variable que mide la resistencia son los de la tabla adjunta.
+
+\begin{table}[]
+\begin{tabular}{|c|cccccccc|}
+\hline
+\begin{tabular}[c]{@{}c@{}}Calidad\\    \\ plásticos\end{tabular} & \multicolumn{8}{c|}{Resistencia}                                                                                                                                                                 \\ \hline
+Plástico   A                                                      & \multicolumn{1}{c|}{135} & \multicolumn{1}{c|}{175} & \multicolumn{1}{c|}{97}  & \multicolumn{1}{c|}{169} & \multicolumn{1}{c|}{213} & \multicolumn{1}{c|}{171} & \multicolumn{1}{c|}{115} & 143 \\ \hline
+Plástico   B                                                      & \multicolumn{1}{c|}{275} & \multicolumn{1}{c|}{170} & \multicolumn{1}{c|}{154} & \multicolumn{1}{c|}{133} & \multicolumn{1}{c|}{219} & \multicolumn{1}{c|}{187} & \multicolumn{1}{c|}{220} & 185 \\ \hline
+Plástico   C                                                      & \multicolumn{1}{c|}{169} & \multicolumn{1}{c|}{239} & \multicolumn{1}{c|}{184} & \multicolumn{1}{c|}{222} & \multicolumn{1}{c|}{253} & \multicolumn{1}{c|}{179} & \multicolumn{1}{c|}{280} & 193 \\ \hline
+Plástico   D                                                      & \multicolumn{1}{c|}{115} & \multicolumn{1}{c|}{105} & \multicolumn{1}{c|}{93}  & \multicolumn{1}{c|}{85}  & \multicolumn{1}{c|}{120} & \multicolumn{1}{c|}{74}  & \multicolumn{1}{c|}{87}  & 63  \\ \hline
+\end{tabular}
+\end{table}
+
+¿Qué conclusiones se deducen de este experimento?
+
+**Solución**
+Los cuatro tipos de plásticos analizados corresponden a una selección aleatoria de 4 conjuntos de observaciones extraídas aleatoriamente del total de diferentes tipos de plásticos que hay en el mercado, entre los cuales debemos observar si existen o no diferencias significativas. Nos encontramos por tanto ante un diseño unifactorial completamente aleatorio con efectos aleatorios
+
+El problema planteado se modeliza a través de un diseño unifactorial totalmente aleatorizado de efectos aleatorios equilibrado. 
+
+-   Variable respuesta: Resistencia a la degradación ambiental. 
+-   Factor: Tipo de plástico.
+-   Modelo equilibrado: Cada uno de los niveles del factor tienen el mismo número de observaciones.
+-   Tamaño del experimento: Número total de observaciones (40 unidades experimentales).
+
+Para realizar este supuesto en R debemos introducir primero los datos de forma correcta. Podemos introducir los datos directamente en R de forma manual o introducirlos previamente en un archivo de texto o Excel y leerlos en R. 
+```{r}
+setwd("C:/Users/user/OneDrive/Paquete R/PRACTICAS-S9")
+propuesto2<-read.table("propuesto2.txt", header = TRUE)
+propuesto2 
+```
+
+Debemos transformar la variable referente a los niveles del factor como factor para poder hacer los cálculos de forma adecuada:
+```{r}
+propuesto2$Plastico<-factor(propuesto2$Plastico)
+propuesto2$Plastico 
+
+```
+
+Para calcular la tabla ANOVA primero hacemos uso de la función “aov” de la siguiente forma:
+```{r}
+mod<-aov(Resistencia~Plastico, data = propuesto2)
+mod<-aov(Resistencia~Plastico, data = propuesto2)
+mod
+summary(mod)
+```
